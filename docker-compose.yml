@@ -6,7 +6,7 @@ services:
       - "5000"
     volumes:
       - type: bind
-        source: .
+        source: ~/index/demo1
         target: /index
   
   nginx:

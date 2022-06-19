@@ -50,7 +50,11 @@ COLLECTION_SCHEMA = {
                 "default": "text",
                 "description": "The type of the field is text"
             },
-
+            "index": {
+                "type": "boolean",
+                "default": True,
+                "description": "Whether the field is indexed"
+            },
             "facet": {
                 "type": "boolean",
                 "default": False,
