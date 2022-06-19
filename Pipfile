@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+xapian-bindings = "*"
+blacksheep = "*"
+uvicorn = "*"
+sqlitedict = "*"
+jsonschema = "*"
+wheel = "*"
+
+[dev-packages]
+requests = "*"
+bs4 = "*"
+
+[requires]
+python_version = "3.9"

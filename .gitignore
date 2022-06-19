@@ -1,0 +1,7 @@
+__spotlyt__/
+__pycache__/
+install.sh
+build.sh
+run.sh
+test.*
+*.sh
