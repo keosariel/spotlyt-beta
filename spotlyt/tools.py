@@ -81,8 +81,8 @@ async def to_doc(datum, database, schema, collection_name, indexer, language="en
         
         if field_type == "text":
             indexer.index_text(value, 1, field_prefix)
-            doc.add_term(value)
-            doc.add_value(field_slot, value)
+            # doc.add_term(value)
+            # doc.add_value(field_slot, value)
             indexer.index_text(value, 1, field_prefix)
 
             if inc_term_pos:
@@ -93,8 +93,8 @@ async def to_doc(datum, database, schema, collection_name, indexer, language="en
             indexer.index_text(value)
 
         elif field_type == "number" or field_type == "date":
-            
-            doc.add_value(field_slot, xapian.sortable_serialise(value))
+            if value:
+                doc.add_value(field_slot, xapian.sortable_serialise(value))
         
         doc.set_data(json.dumps(datum).encode('utf8'))
 

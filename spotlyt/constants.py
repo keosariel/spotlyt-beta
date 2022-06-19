@@ -50,11 +50,7 @@ COLLECTION_SCHEMA = {
                 "default": "text",
                 "description": "The type of the field is text"
             },
-            "partialQuery": {
-                "type": "boolean",
-                "default": False,
-                "description": "If true, the field will be used in partial queries"
-            },
+
             "facet": {
                 "type": "boolean",
                 "default": False,
@@ -102,7 +98,12 @@ SETTINGS_SCHEMA = {
             "type": "boolean",
             "default": False,
             "description": "Enable collapsing of search results"
-        }
+        },
+        "partialQuery": {
+            "type": "boolean",
+            "default": False,
+            "description": "If true, the field will be used in partial queries"
+        },
     },
     "additionalProperties": False
 }

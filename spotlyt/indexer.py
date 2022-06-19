@@ -143,7 +143,7 @@ class Index:
         try: 
             jsonschema.validate(instance=schema, schema=COLLECTION_SCHEMA)
         except jsonschema.ValidationError as err:
-            self.log(level=LOG_ERROR, action="Index.Collection", 
+            self.log(level=LOG_ERROR, operation="Index.Collection", 
                         message=f"Invalid schema for collection '{collection_name}': {err}")
             raise ValueError(f"Invalid schema: {err.message}")
 
