@@ -1,0 +1,2 @@
+/Users/mac/Documents/google-cloud-sdk/bin/gcloud compute ssh --zone "us-west4-b" "spotlyt-beta"  --project "dotted-wind-353823"
+docker run -it -p 8080:8080 -v "$(pwd)":/indexes spotlyt:latest /bin/sh

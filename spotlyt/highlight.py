@@ -18,7 +18,11 @@ async def fragment_text(tokens, window=4, start=0, endswith=".!?"):
     """
     
     frag = []
-    
+
+    if len(tokens) < 80:
+        yield tokens
+        return
+
     while start <= len(tokens):
         end = start+window
         sfrag = tokens[start: end]

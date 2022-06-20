@@ -128,13 +128,20 @@ class Indexes(APIController):
 
         return []
     
-    @delete("/:collection_name/objects/:object_id")
-    async def delete_object(database: Index, collection_name: str, object_id: str):
+    @delete("/:collection_name/objects")
+    async def delete_object(request: Request, database: Index, collection_name: str):
         """Get object by ID"""
-        
-        object = await database.delete_document(collection_name, object_id)
 
-        return []
+        data = await request.json()
+
+        if not isinstance(data, list):
+            return api_error("Invalid data", 400)
+        
+        task_id = await database.delete_documents(collection_name, data)
+        
+        asyncio.create_task(database.index_documents())
+
+        return api_success({"taskId": task_id})
     
     @post("/:collection_name/settings")
     async def set_settings(request: Request, database: Index, collection_name: str):

@@ -70,13 +70,23 @@ async def query_fields(querystring, queryparser, fields):
 
 async def query_facets(querystring, queryparser, facets):
     queries = []
-    for field_name, facet in facets:
+    slots = []
+    for field_slot, field_name, facet in facets:
+        slots.append(field_slot)
         field_prefix = TERM_PREFIXES["field"] + field_name.upper()
-        queries.append(
-            xapian.Query('{}:{}'.format(field_prefix, facet))
-        )
+
+        if isinstance(facet, str):
+            queries.append(
+                xapian.Query('{}:{}'.format(field_prefix, facet))
+            )
+        elif isinstance(facet, list):
+            for f in facet:
+                if isinstance(f, str):
+                    queries.append(
+                        xapian.Query('{}:{}'.format(field_prefix, f))
+                    )
     
-    return await join_query(xapian.Query.OP_AND, *queries)
+    return slots, await join_query(xapian.Query.OP_AND, *queries)
 
 async def query_ranges(queryparser, ranges):
     

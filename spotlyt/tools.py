@@ -32,9 +32,9 @@ async def docify(data, schema, database, collection_name, language="english"):
     indexer.set_flags(indexer.FLAG_SPELLING)
 
     for datum in data:
-        yield await to_doc(datum, database, schema, collection_name, indexer, language)
+        yield await to_doc(datum, schema, collection_name, indexer)
 
-async def to_doc(datum, database, schema, collection_name, indexer, language="english"):
+async def to_doc(datum, schema, collection_name, indexer):
     """Create a xapian.Document from a dictionary.
 
     Args:
@@ -46,8 +46,9 @@ async def to_doc(datum, database, schema, collection_name, indexer, language="en
     """
     try:
         data = await parse_doc(datum, schema)
-    except ValueError as e:
-        return (None, e)
+    except ValueError as err:
+        print(err)
+        return (None, err)
 
     doc = xapian.Document()
     indexer.set_document(doc)
@@ -70,19 +71,25 @@ async def to_doc(datum, database, schema, collection_name, indexer, language="en
             field_prefix = field_prefix + field_name.upper()
 
         if field.get("facet", False):
-            if len(value) > 150:
-                break  
-            
-            doc.add_boolean_term(field_prefix+":{}".format(value))
-            doc.add_value(field_slot, value)
+            if isinstance(value, str):
+                if len(value) > 150:
+                    break  
 
+                doc.add_boolean_term(field_prefix+":{}".format(value))
+                doc.add_value(field_slot, value)
+            elif isinstance(value, list):
+                for v in value:
+                    if isinstance(v, str):
+                        if len(value) > 150:
+                            break  
+                        doc.add_boolean_term(field_prefix+":{}".format(v))
+                        doc.add_value(field_slot, v)
+                        
         doc.add_boolean_term(f"XSPOTLYTCOLLECTION:{collection_name}")
         doc.add_value(0, collection_name)
         
-        if field_type == "text":
+        if field_type == "text" and field.get("index", True):
             indexer.index_text(value, 1, field_prefix)
-            # doc.add_term(value)
-            # doc.add_value(field_slot, value)
             indexer.index_text(value, 1, field_prefix)
 
             if inc_term_pos:
@@ -94,13 +101,19 @@ async def to_doc(datum, database, schema, collection_name, indexer, language="en
 
         elif field_type == "number" or field_type == "date":
             if value:
-                doc.add_value(field_slot, xapian.sortable_serialise(value))
+                if field_type == "date":
+                    value = value.strftime("%Y%m%d")
+
+                doc.add_value(field_slot, xapian.sortable_serialise(int(value)))
         
         doc.set_data(json.dumps(datum).encode('utf8'))
 
     if not document_id:
-        document_id = get_uuid()
+        document_id = to_base64(get_uuid())
+
+    doc.add_value(2, document_id)
     
+    document_id = f"{collection_name}_"+document_id
     document_id = TERM_PREFIXES["ID"] + document_id
     doc.add_term(document_id)
             
@@ -118,9 +131,14 @@ async def parse_doc(doc, schema):
         if field_name in doc:
             field_value = doc[field_name]
             field_type = field["type"]
+            is_facet = field.get("facet", False)
 
             if field_type == "text":
-                parsed_value = str(field_value)
+                if type(field_value) == list and is_facet:
+                    parsed_value = [ str(x) for x in field_value ]
+                else:
+                    parsed_value = str(field_value)
+
             elif field_type == "date":
                 parsed_value = await parse_date(field_value)
             elif field_type == "number":
@@ -130,7 +148,7 @@ async def parse_doc(doc, schema):
             # elif field_type == "geo":
             #     parsed_value = _parse_geo(field_value)
             elif field_type == "id":
-                parsed_value = to_base64(field_value)
+                parsed_value = to_base64(str(field_value))
 
             parsed_doc[field_name] = parsed_value
 
@@ -205,6 +223,6 @@ def to_base64(data):
 def from_base64(data):
     """Decode data from base64.
     """
-
+    
     _data = base64.b64decode(data)
     return _data.decode('ascii')

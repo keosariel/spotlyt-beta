@@ -8,7 +8,7 @@ from functools import reduce
 from .constants import *
 from .utils import Table
 from datetime import datetime
-from spotlyt.tools import get_uuid, docify, from_base64
+from spotlyt.tools import get_uuid, docify, from_base64, to_base64
 from spotlyt.searcher import *
 from spotlyt.highlight import Highlight, fragment_text
 
@@ -28,7 +28,7 @@ log.setLevel(logging.DEBUG)
 class Index:
 
     def __init__(self, name="index", language="english", 
-            basedir="/index" # os.getcwd()
+            basedir=os.getcwd()  # "/index"
         ):
         """Initialize a new Spotlyt instance.
         """
@@ -327,12 +327,13 @@ class Index:
         """
         
         return await self.add_task(collection_name, documents, action="indexDocument")
-    
-    async def delete_documents(self, collection_name, documents):
-        """Delete documents from the index.
-        """
 
-        return await self.add_task(collection_name, documents, action="deleteDocument")
+    async def delete_documents(self, collection_name, document_ids):
+        """Delete documents from the index."""
+
+        document_ids = [f"{collection_name}_"+ to_base64(x) for x in document_ids if x]
+
+        return await self.add_task(collection_name, document_ids, "deleteDocument")
     
     async def index_documents(self):
         """Index documents in the queue.
@@ -374,14 +375,13 @@ class Index:
                     async for docid, xdoc in docs:
                         if docid is None:
                             await self.log(level=LOG_ERROR, operation="Index.Document",
-                                        message=f"Error indexing document in collection `{task['collection']}`, task `{task['id']}` with message `{xdoc.message}`")
+                                        message=f"Error indexing document in collection `{task['collection']}`, task `{task['id']}`")
                             task["hasError"] = True
                             continue
                         database.replace_document(docid, xdoc)
                                 
                 elif task["action"] == "deleteDocument":
-                    for doc in task["documents"]:
-                        docid = doc.get("id")
+                    for docid in task["documents"]:
                         if docid: database.delete_document(docid)
 
                 await self.log(level=LOG_INFO, operation="Index.Document",
@@ -449,6 +449,7 @@ class Index:
         """Highlight text."""
         tokens = await self.hightlighter.split_text(text)
         fragments = fragment_text(tokens)
+
         highlights = []
         i = 0
         async for fragment in fragments:
@@ -540,20 +541,21 @@ class Index:
         
         if fields:
             field_query = await query_fields(querystring, queryparser, fields)
-            query = await join_query(xapian.Query.OP_FILTER, query, field_query)
+            query = await join_query(xapian.Query.OP_AND, query, field_query)
 
         facets = facets or dict()
 
         if not isinstance(facets, dict):
             raise ValueError("Facets must be a JSON object")
 
-        facets = ((field_name, facet) for field_name, facet in facets.items()
+        facets = ((schema[field_name]["slot"], field_name, facet) for field_name, facet in facets.items()
                         if field_name in schema 
                             if schema[field_name].get("type") == "text" 
                                 and schema[field_name].get("facet", False))
-        
+        facet_slots = []
+
         if facets:
-            facets_query = await query_facets(querystring, queryparser, facets)
+            facet_slots, facets_query = await query_facets(querystring, queryparser, facets)
             query = await join_query(xapian.Query.OP_AND, query, facets_query)
 
         ranges = ranges or dict()
@@ -580,10 +582,13 @@ class Index:
 
             enquire.set_sort_by_key_then_relevance(keymaker, False)
 
-        if collapse:
-            pass
-        
         enquire.set_query(query)
+        
+        spies = []
+        for slot in facet_slots:
+            spy = xapian.ValueCountMatchSpy(slot)
+            enquire.add_matchspy(spy)
+            spies.append(spy)
 
         matches = enquire.get_mset(offset, pagesize)
         matches_data = []
@@ -608,6 +613,12 @@ class Index:
             data["_spotlytDocId"] = from_base64(match.document.get_value(2))
             matches_data.append(data)
 
+        spies_data = {}
+
+        for spy in spies:
+            for facet in spy.values():
+                spies_data[facet.term.decode('utf-8')] = facet.termfreq
+
         return {
             "query": querystring,
             "queryCorrection": query_correction,
@@ -616,7 +627,8 @@ class Index:
             "totalRecords": self.database.get_doccount(),
             "offset": offset,
             "pagesize": pagesize,
-            "highlight": highlight
+            "highlight": highlight,
+            "facets": spies_data
         }
 
     def __repr__(self):

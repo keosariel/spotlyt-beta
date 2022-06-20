@@ -1,0 +1,81 @@
+from spotlyt import Index
+import asyncio
+import os
+import json
+import gzip
+
+"""
+import gdown
+
+files = {
+    "childeren_books.json.gz": "1R3wJPgyzEX9w6EI8_LmqLbpY4cIC9gw4",
+    "comic_books.json.gz": "1ICk5x0HXvXDp5Zt54CKPh5qz1HyUIn9m",
+    "fantasy.json.gz": "1x8IudloezYEg6qDTPxuBkqGuQ3xIBKrt",
+    "history.json.gz": "1roQnVtWxVE1tbiXyabrotdZyUY7FA82W",
+    "mystry.json.gz": "1ACGrQS0sX4-26D358G2i5pja1Y6CsGtz",
+    "poetry.json.gz": "1H6xUV48D5sa2uSF_BusW-IBJ7PCQZTS1",
+    "romance.json.gz": "1juZreOlU4FhGnBfP781jAvYdv-UPSf6Q",
+    "young-adult.json.gz": "1gH7dG4yQzZykTpbHYsrw2nFknjUm0Mol"
+}
+
+for fn, id in fiels.items():
+    gdown.download(id=id, output=fn, quiet=False)
+"""
+
+cname = "goodreads"
+cschema = [
+    {"name": "book_id", "type": "id"},
+    {"name": "title", "type": "text"},
+    {"name": "description", "type": "text"},
+    {"name": "country_code", "type": "text", "index": False, "facet": True},
+    {"name": "average_rating", "type": "number"},
+    {"name": "ratings_count", "type": "number"},
+    {"name": "text_reviews_count", "type": "number"},
+    # {"name": "edition_information", "type": "text", "index": False, "facet": True},
+    # {"name": "is_ebook", "type": "boolean", "index": False, "facets": True},
+]
+
+index = Index()
+
+nfields = ["popular_shelves", "similar_books"]
+
+def load_data(file_name, head = 500):
+    count = 0
+    data = []
+    with gzip.open(file_name) as fin:
+        for l in fin:
+            d = json.loads(l)
+            count += 1
+            data.append(d)
+            
+            # break if reaches the 100th line
+            if (head is not None) and (count > head):
+                break
+    return data
+
+def rn(p, d):
+    for i in p:
+        if p in d:
+            d.pop(p)
+    
+    return d
+
+async def idx():
+    await index.set_schema(cname, cschema)
+
+    books = load_data("/index/greads.json.gz", head=20000)
+
+    def g_batches(b, l=500):
+        for i in range(0, len(b), l):
+            yield b[i:i+l]
+        
+    for i, batch in enumerate(g_batches(books)):
+        print(i, " of ", len(books) // 500) 
+        await index.add_documents(cname, batch)
+        await index.index_documents()
+        
+async def main():
+    await index.set_schema(cname, cschema)
+    await idx()
+
+asyncio.run(main())

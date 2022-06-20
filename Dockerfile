@@ -29,6 +29,6 @@ RUN pip3 install --no-cache pipenv
 
 RUN pipenv install --system --deploy --ignore-pipfile
 
-EXPOSE 8080
+EXPOSE 5000
 
 CMD ["python3", "run.py"]

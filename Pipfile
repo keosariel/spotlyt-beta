@@ -10,10 +10,12 @@ uvicorn = "*"
 sqlitedict = "*"
 jsonschema = "*"
 wheel = "*"
+pyvim = "*"
 
 [dev-packages]
 requests = "*"
 bs4 = "*"
+supabase-client = "*"
 
 [requires]
 python_version = "3.9"
