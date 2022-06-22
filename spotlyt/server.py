@@ -99,6 +99,7 @@ class Indexes(APIController):
         facets = data.get("facets", None)
         ranges = data.get("ranges", None)
         to_highlight = data.get("highlight", [])
+        spell_check = data.get("typotolerance", True)
 
         t0 = time.time()
 
@@ -110,7 +111,8 @@ class Indexes(APIController):
             fields=fields,
             facets=facets,
             ranges=ranges,
-            to_highlight=to_highlight
+            to_highlight=to_highlight,
+            spell_check=spell_check
         )
 
         t1 = time.time()
