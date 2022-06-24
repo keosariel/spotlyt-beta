@@ -14,8 +14,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - type: bind
-        source: ~/
-        target: /etc/nginx
+        source: /etc/letsencrypt
+        target: /etc/letsencrypt
     depends_on:
       - spotlyt
     ports:
