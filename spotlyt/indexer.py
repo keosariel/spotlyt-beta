@@ -28,7 +28,7 @@ log.setLevel(logging.DEBUG)
 class Index:
 
     def __init__(self, name="index", language="english", 
-            basedir=os.getcwd()  # "/index"
+            basedir="/index" # os.getcwd()  # "/index"
         ):
         """Initialize a new Spotlyt instance.
         """

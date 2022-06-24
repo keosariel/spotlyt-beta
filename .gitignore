@@ -1,6 +1,7 @@
 __spotlyt__/
 d__spotlyt__/
 __pycache__/
+venv/
 install.sh
 build.sh
 run.sh
