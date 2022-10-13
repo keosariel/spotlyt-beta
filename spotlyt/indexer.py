@@ -476,8 +476,6 @@ class Index:
                 self.reopen()
 
             d += 1
-        
-        raise err
 
     async def query(self, querystring, collection_name="*", 
                     offset=0, pagesize=10, fields=None,

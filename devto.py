@@ -3,11 +3,11 @@ import json
 import pprint
 from sqlitedict import SqliteDict
 from datetime import datetime
-from backports.datetime_fromisoformat import MonkeyPatch
-MonkeyPatch.patch_fromisoformat()
+#from backports.datetime_fromisoformat import MonkeyPatch
+#MonkeyPatch.patch_fromisoformat()
 
 cache = SqliteDict("dev.to", autocommit=True)
-host = "http://34.125.94.232"
+host = "https://devto-api.nairasearch.xyz"
 collection = "devto"
 
 def set_schema(collection, schema):
@@ -117,10 +117,10 @@ def do_posts(field):
     if field == "user":
         username = get_username()
         npages = get_pages(n=n, field="user", username=username)
+        print("user: ", username, " pages: ", npages, len(cache.get("users")))
     else:
         npages = get_pages(n=n, field=field)
-
-    print("USER ==> ", username)
+        print("articles: ", npages, len(cache.get("articles")))
 
     for p in npages:
         batch = get_posts(p, username=username)
